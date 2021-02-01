@@ -217,15 +217,14 @@ TRfRbum = TRfRbNoUnit
 
 #Apply energy units of eV
 EQEeV = np.array(EQENoUnit)
-EQEeV [:,0] = (h*SpeedOfLight/EQENoUnit[:,0]) 
+EQEeV [:,0] = (h*SpeedOfLight/EQEeV[:,0]) 
 
 TRfRbeV =  np.array(TRfRbNoUnit)
-TRfRbeV[:,0] = (h*SpeedOfLight/TRfRbNoUnit[:,0])
+TRfRbeV[:,0] = (h*SpeedOfLight/TRfRbeV[:,0])
+#Something is wrong with this calculation. Off by a factor of e-25
 
-
-print(EQEum-EQEeV)
-print(TRfRbum-TRfRbeV)
-
+#print(EQEum-EQEeV)
+#print(TRfRbum-TRfRbeV)
 
 
 
@@ -240,10 +239,10 @@ plt.show()
 
 
 
-plt.plot(TRfRbeV[:,0] / eV, TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
-plt.plot(TRfRbeV[:,0] / eV, TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
-plt.plot(TRfRbeV[:,0] / eV, TRfRbeV[:,3],color='purple',marker=None,label="$R_b$")
-plt.plot(EQEeV[:,0] / eV, EQEeV[:,1],color='black',marker=None,label="EQE")
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,3],color='purple',marker=None,label="$R_b$")
+plt.plot(EQEeV[:,0], EQEeV[:,1],color='black',marker=None,label="EQE")
 plt.legend(loc = 'upper right')
 plt.xlabel('Energy, eV')
 plt.show()
@@ -306,31 +305,32 @@ AbsDarkeV= scipy.interpolate.interp1d(EQEeV[:,0], EQEeV[:,1])
 
 
 
-#DarkAeVnointerp = TRfRbum[:,[0,1]]
-#DarkAeVnointerp[:,1] = 1 - TRfRbum[:,2] - TRfRbum[:,1]
-#DarkAeV = DarkAeVnointerp
-#DarkAeV = scipy.interpolate.interp1d(DarkAeV[:,0], DarkAeV[:,1])
+DarkAeVnointerp = TRfRbeV[:,[0,1]]
+DarkAeVnointerp[:,1] = 1 - TRfRbeV[:,2] - TRfRbeV[:,1]
+DarkAeV = DarkAeVnointerp
+DarkAeV = scipy.interpolate.interp1d(DarkAeV[:,0], DarkAeV[:,1])
 
 
 
 
-
+lam_min = 280 #nm
+lam_max = 4000 #nm
+En_min = h * SpeedOfLight / lam_max
+En_max = h * SpeedOfLight / lam_min
 
 
 # this thingy takes two functions and one argument, 
 # sticks the argument into each function then returns the result
-#def add2funcs(f1,f2,x):
-#    return f1(x) + f2(x)
+def add2funcs(f1,f2,x):
+    return f1(x) + f2(x)
   
 
-#Ephoton = np.linspace(E_min, E_max, 100)
-#addem = add2funcs(DarkRfeV, DarkTeV, Ephoton)
-#print(addem)
+Ephoton = np.linspace(En_min, En_max, 100)
+addem = add2funcs(DarkRfeV, DarkTeV, Ephoton)
+print(addem)
+DarkAeV2 = 1-addem
 
-##Units debug
-#5.668124528078765e-29
-#2.5628962674293367e-30
-#Moopsy
+Moops
  
 
 
