@@ -204,8 +204,14 @@ EQENoUnit = np.array(EQENoUnit)
 TRfRbNoUnit = np.array(TRfRbNoUnit)
 
 
-SpeedOfLight = 2.9979e08 #m/s
-h = 6.626e-34 #J*s
+SpeedOfLight = 299792458 #m/s
+h = 4.135667516e-15 #eV*s
+
+
+Testmin = h*SpeedOfLight*1e6/.3
+Testmax = h*SpeedOfLight*1e6/2.5
+print(Testmin, Testmax)
+
 
 
 #Apply wavelength units of um
@@ -217,10 +223,10 @@ TRfRbum = TRfRbNoUnit
 
 #Apply energy units of eV
 EQEeV = np.array(EQENoUnit)
-EQEeV [:,0] = (h*SpeedOfLight/EQEeV[:,0]) 
+EQEeV [:,0] = (h*SpeedOfLight*1e6/EQEeV[:,0]) 
 
 TRfRbeV =  np.array(TRfRbNoUnit)
-TRfRbeV[:,0] = (h*SpeedOfLight/TRfRbeV[:,0])
+TRfRbeV[:,0] = (h*SpeedOfLight*1e6/TRfRbeV[:,0])
 #Something is wrong with this calculation. Off by a factor of e-25
 
 #print(EQEum-EQEeV)
@@ -238,15 +244,6 @@ plt.show()
 #This plot accurately displays the raw data range from 0.3 to 2.5 microns.
 
 
-
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,3],color='purple',marker=None,label="$R_b$")
-plt.plot(EQEeV[:,0], EQEeV[:,1],color='black',marker=None,label="EQE")
-plt.legend(loc = 'upper right')
-plt.xlabel('Energy, eV')
-plt.show()
-#Range should be 4.13 eV to 0.50
 
 
 #__________________________MATHEMATICA_______________________________#
@@ -305,32 +302,66 @@ AbsDarkeV= scipy.interpolate.interp1d(EQEeV[:,0], EQEeV[:,1])
 
 
 
+
+
+
+
+
+#########################################
+
+
+
+
+
+
+
+
+
+#Attempt 1
+
 DarkAeVnointerp = TRfRbeV[:,[0,1]]
 DarkAeVnointerp[:,1] = 1 - TRfRbeV[:,2] - TRfRbeV[:,1]
 DarkAeV = DarkAeVnointerp
 DarkAeV = scipy.interpolate.interp1d(DarkAeV[:,0], DarkAeV[:,1])
 
+#End attempt 1
+
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
+plt.plot(TRfRbeV[:,0], TRfRbeV[:,3],color='purple',marker=None,label="$R_b$")
+plt.plot(EQEeV[:,0], EQEeV[:,1],color='black',marker=None,label="EQE")
+plt.plot(DarkAeVnointerp[:,0], DarkAeVnointerp[:,1], color='blue',marker=None,label="$Abs$")
+plt.legend(loc = 'upper right')
+plt.xlabel('Energy, eV')
+plt.show()
+#Range should be 4.13 eV to 0.50. Is now accurate
 
 
 
-lam_min = 280 #nm
-lam_max = 4000 #nm
-En_min = h * SpeedOfLight / lam_max
-En_max = h * SpeedOfLight / lam_min
+
+
+
+#Attempt 2
+
+#lam_min = 280 #nm
+#lam_max = 4000 #nm
+#En_min = h * SpeedOfLight / lam_max
+#En_max = h * SpeedOfLight / lam_min
 
 
 # this thingy takes two functions and one argument, 
 # sticks the argument into each function then returns the result
-def add2funcs(f1,f2,x):
-    return f1(x) + f2(x)
+#def add2funcs(f1,f2,x):
+ #   return f1(x) + f2(x)
   
 
-Ephoton = np.linspace(En_min, En_max, 100)
-addem = add2funcs(DarkRfeV, DarkTeV, Ephoton)
-print(addem)
-DarkAeV2 = 1-addem
+#Ephoton = np.linspace(En_min, En_max, 100)
+#addem = add2funcs(DarkRfeV, DarkTeV, Ephoton)
+#print(addem)
+#DarkAeV2 = 1-addem
 
-Moops
+#End attempt 2
+
  
 
 
