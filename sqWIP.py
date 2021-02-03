@@ -262,6 +262,8 @@ plt.show()
 
                  
                           
+                 
+                          
                     #ISOLATE AND INTERPOLATE INDIVIDUAL CURVES#
 #For T
 #DarkTmicronNoInterp = TRfRbNoUnit [:, [0, 1]]#isolate T data from set #no longer needed but make sure the numebrs still work   #Can simplify by removing this line and changing interp line to TRfRbNoUnit instead of the output from this line      
@@ -308,28 +310,21 @@ AbsDarkeV= scipy.interpolate.interp1d(EQEeV[:,0], EQEeV[:,1], fill_value="extrap
 
 
 
+#TEST SPACE#
+nums = 200
+TestSpaceum = np.linspace(.3,2.48,nums)
+TestSpaceeV = np.linspace(.4,2.4,nums)
+TestArray = np.array(TestSpaceum)
+TestPlot = DarkTmicron(TestSpaceum)
+plt.plot(TestPlot)
 
 
-
-
-#########################################
-
-
-
-
-
-
-
-
-
-#Attempt 1
+########################################
 
 DarkAeVnointerp = TRfRbeV[:,[0,1]]
 DarkAeVnointerp[:,1] = 1 - TRfRbeV[:,2] - TRfRbeV[:,1]
 DarkAeV = DarkAeVnointerp
 DarkAeV = scipy.interpolate.interp1d(DarkAeVnointerp[:,0], DarkAeVnointerp[:,1], fill_value="extrapolate")
-
-#End attempt 1
 
 plt.plot(TRfRbeV[:,0], TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
 plt.plot(TRfRbeV[:,0], TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
@@ -340,30 +335,6 @@ plt.legend(loc = 'upper right')
 plt.xlabel('Energy, eV')
 plt.show()
 #Range should be 4.13 eV to 0.50. Is now accurate
-
-
-
-#Attempt 2
-
-#lam_min = 280 #nm
-#lam_max = 4000 #nm
-#En_min = h * SpeedOfLight / lam_max
-#En_max = h * SpeedOfLight / lam_min
-
-
-# this thingy takes two functions and one argument, 
-# sticks the argument into each function then returns the result
-#def add2funcs(f1,f2,x):
- #   return f1(x) + f2(x)
-  
-
-#Ephoton = np.linspace(En_min, En_max, 100)
-#addem = add2funcs(DarkRfeV, DarkTeV, Ephoton)
-#print(addem)
-#DarkAeV2 = 1-addem
-
-#End attempt 2
-
  
 
 #DarkAeV(Ephoton) = 1 - DarkRfeV(Ephoton) - DarkTeV(Ephoton)
@@ -404,10 +375,10 @@ plt.show()
 Emin = min(EQEeV [:,0])
 Emax = max(EQEeV [:,0])
 print('Emin = ',Emin, 'and Emax = ',Emax, 'eV')
-Ephoton = np.linspace(Emin, Emax, 100,)
+Ephoton = np.linspace(Emin, Emax, num = 100)
 eta = .9
-Tcell=300
-kB = 1.38064852e-23
+Tcell=300 #K
+kB = 8.61733034e-5 #eV/K
 
 
 EQEDarknointerp = eta*AbsDarkeV(Ephoton)
@@ -415,12 +386,11 @@ EQEDarknointerpCALC = EQEDarknointerp * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell
 EQEDark = scipy.interpolate.interp1d(Ephoton, EQEDarknointerpCALC, fill_value="extrapolate")
 #EQEdark[Ephoton_, \[Eta]_] := \[Eta] AbsDarkeV[Ephoton]
 #Eta is the electron-hole pair extraction efficiency. You could probably call this the internal quantum efficiency too...
-print(kB)
+
 
 
 print(EQEDarknointerp)
 plt.plot(AbsDarkeV(Ephoton))
-plt.plot()
 plt.plot(EQEDark(Ephoton))
 plt.show()
 
