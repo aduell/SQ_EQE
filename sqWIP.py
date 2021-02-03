@@ -41,7 +41,6 @@ import scipy.interpolate, scipy.integrate, sys
 assert sys.version_info >= (3,6), 'Requires Python 3.6+'
 
 
-
 # One more package: A units-and-constants package I wrote: http://pypi.python.org/pypi/numericalunits
 # 
 # Example: <span style="color:blue">x = 5 * cm</span> means "x equals 5 centimeters".
@@ -51,7 +50,7 @@ assert sys.version_info >= (3,6), 'Requires Python 3.6+'
 # In[2]:
 
 
-from numericalunits import W, K, nm, m, um, cm, s, eV, meV, V, hPlanck, pi, mA, c0, kB, e
+from numericalunits import W, K, nm, m, um, cm, s, eV, meV, V, hPlanck, pi, mA, c0, e
 #import numericalunits
 #help(numericalunits)
 #hPlanck = 6.626e-34
@@ -81,7 +80,7 @@ AM15 = downloaded_array[1:, [0,2]]
 
 # The first line should be 280.0 , 4.7309E-23
 # The last line should be 4000.0, 7.1043E-03
-print(AM15)
+#print(AM15)
 
 
 # Tack on the appropriate units:
@@ -140,7 +139,7 @@ plt.show()
 
 def SPhotonsPerTEA(Ephoton):
     λ = hPlanck * c0 / Ephoton
-    print(λ)
+    #print('λ = ',λ)
     return AM15interp(λ) * (1 / Ephoton) * (hPlanck * c0 / Ephoton**2)
 
 
@@ -149,7 +148,7 @@ def SPhotonsPerTEA(Ephoton):
 # In[10]:
 
 
-print(SPhotonsPerTEA(2 * eV) * (1 * meV) * (1 * m**2) * (1 * s))
+print('# of photons per m^2/s is',SPhotonsPerTEA(2 * eV) * (1 * meV) * (1 * m**2) * (1 * s))
 
 
 # Next: The "Solar constant" is the sun's total irradiance. If I did this right, it should be 1000 watts/meter$^2$, because that's how NREL normalized their data.
@@ -161,7 +160,7 @@ PowerPerTEA = lambda E : E * SPhotonsPerTEA(E)
 # quad() is ordinary integration; full_output=1 is (surprisingly) how you hide
 # the messages warning about poor accuracy in integrating.
 solar_constant = scipy.integrate.quad(PowerPerTEA,E_min,E_max, full_output=1)[0]
-print(solar_constant / (W/m**2))
+print('Solar Constant should be ~ 1000. Calculated as',solar_constant / (W/m**2))
 
 # Close enough!
 # 
@@ -187,66 +186,68 @@ print(solar_constant / (W/m**2))
 
 
 
-####EVENTUALLY CHANGE TO RUN SEAMLESSLY WITH 4 BEM CODE##############
-TRfRbNoUnit = pd.read_csv('/Users/aduell/Desktop/CodeThings/pv-window-bem-master/pv-window-bem-master/Output/TRfRb.txt')
-#TRfRbNoUnit = 
-  #Import["/Users/lwheeler/Research/Projects/SwitchGlaze/BTO_SwitchGlaze_FY20/BEM/Window_inputs/20200722_BEM_big_run/TRfRb_50pct_select1.txt", "CSV", 
-   #HeaderLines -> 1];
-EQENoUnit = pd.read_csv('/Users/aduell/Desktop/CodeThings/pv-window-bem-master/pv-window-bem-master/Output/EQE.txt')
-#EQENoUnit = 
-  #Import["/Users/lwheeler/Research/Projects/SwitchGlaze/BTO_SwitchGlaze_FY20/BEM/Window_inputs/20200722_BEM_big_run/EQE_50pct_select1.txt", "CSV", 
-   #HeaderLines -> 1];
 
-#Explanation of columns for TRfRb: 0 = Wavelength, 1 = T, 2 = Rf, 3 = Rb
-#for EQE: 0 = same wavelengths as TRfRb, 1 = EQE (not actually EQE?)
+
+####EVENTUALLY CHANGE TO RUN SEAMLESSLY WITH 4 BEM CODE##############
+TRfRbum = pd.read_csv('/Users/aduell/Desktop/CodeThings/pv-window-bem-master/pv-window-bem-master/Output/TRfRb.txt')
+EQEum = pd.read_csv('/Users/aduell/Desktop/CodeThings/pv-window-bem-master/pv-window-bem-master/Output/EQE.txt')
 
    
-EQENoUnit = np.array(EQENoUnit)
-TRfRbNoUnit = np.array(TRfRbNoUnit)
-
+EQEum = np.array(EQEum)
+TRfRbum = np.array(TRfRbum)
 
 SpeedOfLight = 299792458 #m/s
 h = 4.135667516e-15 #eV*s
 
-
-
-
-Testmin = h*SpeedOfLight*1e6/.3
-Testmax = h*SpeedOfLight*1e6/2.5
-print('Acceptable eV range',Testmin, Testmax)
-
-
-#Apply wavelength units of um
-EQEum = EQENoUnit
-#EQEum[:,0] *= um
-
-TRfRbum = TRfRbNoUnit
-#TRfRbum[:,0] *= um
-
-#Apply energy units of eV
-EQEeV = np.array(EQENoUnit)
+#Convert from um to energy units of eV
+EQEeV = np.array(EQEum)
 EQEeV [:,0] = (h*SpeedOfLight*1e6/EQEeV[:,0]) 
 
-TRfRbeV =  np.array(TRfRbNoUnit)
-TRfRbeV[:,0] = (h*SpeedOfLight*1e6/TRfRbeV[:,0])
+
+#Variables
+T = TRfRbum[:,1]
+Rf = TRfRbum[:,2]
+Rb = TRfRbum[:,3]
+EQE = EQEum[:,1]
+lams = EQEum[:,0]
+Ephoton = EQEeV [:,0]
+Emin = min(Ephoton)
+Emax = max(Ephoton)
+print('Emin = ',Emin, 'and Emax = ',Emax, 'eV')
+
+eta = .9 #unitless
+Tcell=300 #K
+kB = 8.61733034e-5 #eV/K
 
 
-#print(EQEum-EQEeV)
-#print(TRfRbum-TRfRbeV)
 
+#Calculate Absorbance
+DarkAeVnointerp = np.array(EQEeV)#Array is arbitrary so long as 0 is Ephoton, and 1 is mutable
+DarkAeVnointerp[:,1] = 1 - Rf - T
+Abs = DarkAeVnointerp[:,1]
+DarkAeV = scipy.interpolate.interp1d(Ephoton, Abs, fill_value="extrapolate")
+#Equivalent mathematica code normally comes below the interpolations: 'DarkAeV[Ephoton_] := 1 - DarkRfeV[Ephoton] - DarkTeV[Ephoton]'
 
-
-plt.plot(TRfRbum[:,0], TRfRbum[:,1], color='magenta',marker=None,label="$T$")
-plt.plot(TRfRbum[:,0], TRfRbum[:,2],color='green',marker=None,label="$R_f$")
-plt.plot(TRfRbum[:,0], TRfRbum[:,3],color='purple',marker=None,label="$R_b$")
-plt.plot(EQEum[:,0], EQEum[:,1],color='black',marker=None,label="EQE")
+#plot of data in microns
+plt.plot(lams, T, color='magenta',marker=None,label="$T$")
+plt.plot(lams, Rf, color='green',marker=None,label="$R_f$")
+plt.plot(lams, Rb, color='purple',marker=None,label="$R_b$")
+plt.plot(lams, EQE, color='black',marker=None,label="EQE")
 plt.legend(loc = 'upper right')
 plt.xlabel('Wavelength, micron')
 plt.show()
 #This plot accurately displays the raw data range from 0.3 to 2.5 microns.
 
-
-
+#Plot of data in eV
+plt.plot(Ephoton, T, color='magenta',marker=None,label="$T$")
+plt.plot(Ephoton, Rf,color='green',marker=None,label="$R_f$")
+plt.plot(Ephoton, Rb,color='purple',marker=None,label="$R_b$")
+plt.plot(Ephoton, EQE,color='black',marker=None,label="EQE")
+plt.plot(Ephoton, DarkAeVnointerp[:,1], color='blue',marker=None,label="$Abs$")
+plt.legend(loc = 'upper right')
+plt.xlabel('Energy, eV')
+plt.show()
+#Range should be 4.13 eV to 0.50. Is now accurate
 
 #__________________________MATHEMATICA_______________________________#
 
@@ -262,49 +263,41 @@ plt.show()
 
                  
                           
-                 
-                          
                     #ISOLATE AND INTERPOLATE INDIVIDUAL CURVES#
 #For T
-#DarkTmicronNoInterp = TRfRbNoUnit [:, [0, 1]]#isolate T data from set #no longer needed but make sure the numebrs still work   #Can simplify by removing this line and changing interp line to TRfRbNoUnit instead of the output from this line      
+DarkTmicron = scipy.interpolate.interp1d(lams, T)
+DarkTeV = scipy.interpolate.interp1d(Ephoton, T)
 #DarkTmicronNoInterp = ({#[[1]] micron, #[[2]]} &) /@ TRfRbNoUnit;
-DarkTmicron = scipy.interpolate.interp1d(TRfRbum[:,0], TRfRbum[:,1])
 #DarkTmicron = Interpolation[DarkTmicronNoInterp, InterpolationOrder -> 1];
-#DarkTeVNoInterp = DarkTmicronNoInterp                     #No longer needed but make sure still works
 #DarkTeVNoInterp = DarkTmicronNoInterp;
-#DarkTeVNoInterp = (hPlanck*SpeedOfLight/DarkTeVNoInterp) #No longer needed but make sure still works
 #DarkTeVNoInterp[[All, 1]] = hPlanck SpeedOfLight/DarkTeVNoInterp[[All, 1]];
-DarkTeV = scipy.interpolate.interp1d(TRfRbeV[:,0], TRfRbeV[:,1])
 #DarkTeV = Interpolation[DarkTeVNoInterp, InterpolationOrder -> 1];
 
 #For Rf
+DarkRfmicron = scipy.interpolate.interp1d(lams, Rf)
+DarkRfeV = scipy.interpolate.interp1d(Ephoton, Rf)
 #DarkRfmicronNoInterp = ({#[[1]] micron, #[[3]]} &) /@ TRfRbNoUnit;
-DarkRfmicron = scipy.interpolate.interp1d(TRfRbum[:,0], TRfRbum[:,2])
 #DarkRfmicron = Interpolation[DarkRfmicronNoInterp, InterpolationOrder -> 1];
 #DarkRfeVNoInterp = DarkRfmicronNoInterp;
 #DarkRfeVNoInterp[[All, 1]] = hPlanck SpeedOfLight/DarkRfeVNoInterp[[All, 1]];
-DarkRfeV = scipy.interpolate.interp1d(TRfRbeV[:,0], TRfRbeV[:,2])
 #DarkRfeV = Interpolation[DarkRfeVNoInterp, InterpolationOrder -> 1];
 
 #For Rb
+DarkRbmicron = scipy.interpolate.interp1d(lams, Rb)
+DarkRbeV = scipy.interpolate.interp1d(lams, Rb)
 #DarkRbmicronNoInterp = ({#[[1]] micron, #[[4]]} &) /@ TRfRbNoUnit;
-DarkRbmicron = scipy.interpolate.interp1d(TRfRbum[:,0], TRfRbum[:,3])
 #DarkRbmicron = Interpolation[DarkRbmicronNoInterp, InterpolationOrder -> 1];
 #DarkRbeVNoInterp = DarkRbmicronNoInterp;
 #DarkRbeVNoInterp[[All, 1]] = hPlanck SpeedOfLight/DarkRbeVNoInterp[[All, 1]];
-DarkRbeV = scipy.interpolate.interp1d(TRfRbeV[:,0], TRfRbeV[:,3])
 #DarkRbeV = Interpolation[DarkRbeVNoInterp, InterpolationOrder -> 1];
 
 #For EQE
-#AbsDarkMicronNoInterp = EQENoUnit 
+AbsDarkMicron = scipy.interpolate.interp1d(lams, EQE)  #it worked?
+AbsDarkeV= scipy.interpolate.interp1d(Ephoton, EQE, fill_value="extrapolate")
 #AbsDarkMicronNoInterp = ({# [[1]] micron, #[[2]]} &) /@ EQENoUnit;
-AbsDarkMicron = scipy.interpolate.interp1d(EQEum[:,0], EQEum[:,1])  #it worked?
 #AbsDarkMicron = Interpolation[AbsDarkMicronNoInterp, InterpolationOrder -> 1];
-#AbsDarkeVNoInterp = AbsDarkMicronNoInterp
 #AbsDarkeVNoInterp = AbsDarkMicronNoInterp;
-#AbsDarkeVNoInterp = hPlanck*SpeedOfLight/AbsDarkeVNoInterp
 #AbsDarkeVNoInterp[[All, 1]] = hPlanck SpeedOfLight/AbsDarkeVNoInterp[[All, 1]];
-AbsDarkeV= scipy.interpolate.interp1d(EQEeV[:,0], EQEeV[:,1], fill_value="extrapolate")
 #AbsDarkeV = Interpolation[AbsDarkeVNoInterp, InterpolationOrder -> 1];
 
 
@@ -317,50 +310,8 @@ TestSpaceeV = np.linspace(.4,2.4,nums)
 TestArray = np.array(TestSpaceum)
 TestPlot = DarkTmicron(TestSpaceum)
 plt.plot(TestPlot)
-
-
-########################################
-
-DarkAeVnointerp = TRfRbeV[:,[0,1]]
-DarkAeVnointerp[:,1] = 1 - TRfRbeV[:,2] - TRfRbeV[:,1]
-DarkAeV = DarkAeVnointerp
-DarkAeV = scipy.interpolate.interp1d(DarkAeVnointerp[:,0], DarkAeVnointerp[:,1], fill_value="extrapolate")
-
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,1], color='magenta',marker=None,label="$T$")
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,2],color='green',marker=None,label="$R_f$")
-plt.plot(TRfRbeV[:,0], TRfRbeV[:,3],color='purple',marker=None,label="$R_b$")
-plt.plot(EQEeV[:,0], EQEeV[:,1],color='black',marker=None,label="EQE")
-plt.plot(DarkAeVnointerp[:,0], DarkAeVnointerp[:,1], color='blue',marker=None,label="$Abs$")
-plt.legend(loc = 'upper right')
-plt.xlabel('Energy, eV')
+plt.title("Interpolation Test Plot")
 plt.show()
-#Range should be 4.13 eV to 0.50. Is now accurate
- 
-
-#DarkAeV(Ephoton) = 1 - DarkRfeV(Ephoton) - DarkTeV(Ephoton)
-#DarkAeV[Ephoton_] := 1 - DarkRfeV[Ephoton] - DarkTeV[Ephoton]
-
-########################################################
-
-
-
-
-
-#Plot[{DarkTeV[Ephoton eV], DarkRfeV[Ephoton eV], DarkRbeV[Ephoton eV], 
-   #DarkAeV[Ephoton eV], AbsDarkeV[Ephoton eV]}, {Ephoton, Emin/eV , Emax/eV },
-   #PlotRange -> {{Emin/eV, Emax/eV}, {-0.1, 1.1}}, PlotStyle -> {Thick}, 
-  #Filling -> Axis, ImageSize -> 600, Frame -> True, 
-  #FrameLabel -> {Style["Energy (eV)", 16]}, 
-  #LabelStyle -> Directive[FontSize -> 16], 
-  #PlotLegends -> {"\!\(\*SubscriptBox[\(T\), \(Inc\)]\)(E)", 
-    #"\!\(\*SubscriptBox[\(R\), \(f\)]\)(E)", 
-    #"\!\(\*SubscriptBox[\(R\), \(b\)]\)(E)", 
-    #"\!\(\*SubscriptBox[\(A\), \(Total\)]\)(E)", 
-    #"\!\(\*SubscriptBox[\(A\), \(ST\)]\)"}] // Quiet
-    
-  
-
-
 
 
 
@@ -372,47 +323,43 @@ plt.show()
 
 
 #Here I calculate the power conversion efficiency using the absorption of the absorber calculated from TMM 
-Emin = min(EQEeV [:,0])
-Emax = max(EQEeV [:,0])
-print('Emin = ',Emin, 'and Emax = ',Emax, 'eV')
-Ephoton = np.linspace(Emin, Emax, num = 100)
-eta = .9
-Tcell=300 #K
-kB = 8.61733034e-5 #eV/K
 
 
 EQEDarknointerp = eta*AbsDarkeV(Ephoton)
+#EQEdark[Ephoton_, Eta_] := Eta AbsDarkeV[Ephoton]
+#Eta is the electron-hole pair extraction efficiency. You could probably call this the internal quantum efficiency too...
 EQEDarknointerpCALC = EQEDarknointerp * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1)
 EQEDark = scipy.interpolate.interp1d(Ephoton, EQEDarknointerpCALC, fill_value="extrapolate")
-#EQEdark[Ephoton_, \[Eta]_] := \[Eta] AbsDarkeV[Ephoton]
-#Eta is the electron-hole pair extraction efficiency. You could probably call this the internal quantum efficiency too...
 
 
-
-print(EQEDarknointerp)
+#print(EQEDarknointerp)
 plt.plot(AbsDarkeV(Ephoton))
 plt.plot(EQEDark(Ephoton))
 plt.show()
 
-RR0darkHalfInteg = scipy.integrate.quad(EQEDark, Emin, Emax) #*((2 * pi)/(SpeedOfLight**2 * h**3))
-RR0darkHalf = np.multiply(RR0darkHalfInteg, ((2 * pi)/(SpeedOfLight**2 * h**3)))
+RR0darkHalf_Integ = scipy.integrate.quad(EQEDark, Emin, Emax) #*((2 * pi)/(SpeedOfLight**2 * h**3))
+RR0darkHalf = np.multiply(RR0darkHalf_Integ, ((2 * pi)/(SpeedOfLight**2 * h**3)))
 
 
 theMoops
-#RR0darkHalf[Tcell_, \[Eta]_] := (2 \[Pi])/(SpeedOfLight^2 hPlanck^3)
+#RR0darkHalf[Tcell_, Eta] := (2 Pi)/(SpeedOfLight^2 hPlanck^3)
    #NIntegrate[
-   #EQEdark[Ephoton, \[Eta]] Ephoton^2/(
-    #Exp[(Ephoton)/(kB Tcell)] - 1), {Ephoton, Emin, Emax}, 
+   #EQEdark[Ephoton, Eta] Ephoton^2/(xp[(Ephoton)/(kB Tcell)] - 1), {Ephoton, Emin, Emax}, 
    #Method -> "AdaptiveQuasiMonteCarlo"]
 theMoops2  
    
+
+
    
-#RR0darkApprox[V_?NumericQ, Tcell_, \[Eta]_] := 
- #Exp[(e V)/(kB Tcell)] RR0darkHalf[Tcell, \[Eta]]
-    
-#GeneratedDark[\[Eta]_] := 
- #NIntegrate[
-  #SPhotonsPerTEA[Ephoton] EQEdark[Ephoton, \[Eta]], {Ephoton, Emin, Emax}, 
+#RR0darkApprox[V_?NumericQ, Tcell_, Eta_] :=  Exp[(e V)/(kB Tcell)] RR0darkHalf[Tcell, Eta]
+
+
+
+
+
+
+#GeneratedDark[Eta_] := 
+ #NIntegrate[SPhotonsPerTEA[Ephoton] EQEdark[Ephoton, Eta], {Ephoton, Emin, Emax}, 
   #Method -> "AdaptiveQuasiMonteCarlo"]
  
  #CurrentDensityDarkApprox[V_?NumericQ, Tcell_, \[Eta]_] := 
