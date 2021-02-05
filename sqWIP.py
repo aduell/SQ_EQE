@@ -49,12 +49,11 @@ assert sys.version_info >= (3,6), 'Requires Python 3.6+'
 
 # In[2]:
 
-
 from numericalunits import W, K, nm, m, um, cm, s, eV, meV, V, hPlanck, pi, mA, c0, e
 #import numericalunits
 #help(numericalunits)
 #hPlanck = 6.626e-34
-SpeedOfLight = 299792458 #in m/s bleh figure out how to change later
+#SpeedOfLight = 299792458 #in m/s bleh figure out how to change later
 
 
 # ## Program inputs
@@ -216,7 +215,7 @@ Emax = max(Ephoton)
 Ephoton2 = np.linspace(Emin, Emax, 100)
 print('Emin = ',Emin, 'and Emax = ',Emax, 'eV')
 
-eta = .9 #unitless
+eta = 0.9 #unitless
 Tcell=300 #K
 kB = 8.61733034e-5 #eV/K
 
@@ -323,21 +322,27 @@ AbsDarkeV= scipy.interpolate.interp1d(Ephoton, EQE)
 EQEDark = eta * EQE #Units = none          #Originally --> eta*AbsDarkeV(Ephoton) #AbsDarkeV defined as interp1d of (Ephoton, EQE)
 #EQEdark[Ephoton_, Eta_] := Eta AbsDarkeV[Ephoton]
 #Eta is the electron-hole pair extraction efficiency. You could probably call this the internal quantum efficiency too...
-EQEDarknointerpCALC = EQEDark * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1) #Units = eV^2
-EQEDarkCALC = scipy.interpolate.interp1d(Ephoton, EQEDarknointerpCALC)
+EQEDarknointerpINTEGRAND = EQEDark * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1) #Units = eV^2
+EQEDarkINTEGRAND = scipy.interpolate.interp1d(Ephoton, EQEDarknointerpINTEGRAND)
+#EQEDarknointerpINTEGRANDtest = Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1) #Units = eV^2
 
 
-RR0darkHalf_Integ = scipy.integrate.quad(EQEDarkCALC, Emin, Emax) #Units should be coming out to eV^3 
+RR0darkHalf_Integ = scipy.integrate.quad(EQEDarkINTEGRAND, Emin, Emax)[0] #Units should be coming out to eV^3 
 RR0darkHalf = np.multiply(RR0darkHalf_Integ, ((2 * pi)/(SpeedOfLight**2 * h**3))) #Units = 1/(m^2 * s) = eV^3 * 1/((m^2/s^2) * (eV^3*s^3))
 print('RR0 dark half calculated using interp1ds is' , RR0darkHalf)
 
 #####Try without interpolated functions
-RR0darkHalfARR = (2 * pi)/(SpeedOfLight**2 * h**3) * np.trapz((EQEDark) * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1))
+RR0darkHalfARR = (2 * pi)/(SpeedOfLight**2 * h**3) * np.trapz((EQEDark) * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1), Ephoton)
 #RR0darkHalfARRtest = (2 * pi)/(SpeedOfLight**2 * h**3) * np.trapz(EQEDarkCALC(Ephoton)) #Calculates the same thing as EQEdarkHalfARR
 
 print('RR0 dark half calculated using arrays as',RR0darkHalfARR)
 # (2 * pi)/(SpeedOfLight**2 * h**3) * Integral{{{EQEDarknointerp * Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1)}}}
 
+
+#print((2 * pi)/(SpeedOfLight**2 * h**3))
+#print(Ephoton**2/(np.exp((Ephoton)/(kB * Tcell)) - 1))
+#print(EQE)
+#print(EQEDark)
 
 
 
@@ -345,16 +350,22 @@ print('RR0 dark half calculated using arrays as',RR0darkHalfARR)
 plt.plot(Ephoton, EQE, color='red',marker=None,label="$EQE$")
 plt.plot(Ephoton, EQEDark, color='maroon',marker=None,label="$EQEDark$")
 #plt.plot(Ephoton, AbsDarkeV(Ephoton), color='brown',marker=None,label="$EQEinterp$") #Should be identical to (Ephoton, EQE)
-plt.plot(Ephoton, EQEDarknointerpCALC, color='magenta',marker=None,label="$EQEDrkCalc$")
+plt.plot(Ephoton, EQEDarknointerpINTEGRAND, color='magenta',marker=None,label="$EQEDrkIntgrnd$")
 #plt.plot(Ephoton, EQEDarkCALC(Ephoton), color='purple',marker=None,label="$EQEDrkIntrpCalc$")
 plt.legend(loc = 'upper right')
 plt.xlabel('Energy, eV')
 plt.show()
 
-plt.plot(Ephoton, EQEDarknointerpCALC, color='magenta',marker=None,label="$EQEDrkCalc$")
+plt.plot(Ephoton, EQEDarknointerpINTEGRAND, color='magenta',marker=None,label="$EQEDrkCalc$")
 plt.legend(loc = 'upper right')
 plt.xlabel('Energy, eV')
 plt.show()
+
+#plt.plot(Ephoton, EQEDarknointerpINTEGRANDtest, color='green',marker=None,label="$EQEDrkModifier$")
+#plt.legend(loc = 'upper right')
+#plt.title("Modifier applied to EQEDark in line 325")
+#plt.xlabel('Energy, eV')
+#plt.show()
 
 
 
@@ -407,14 +418,14 @@ MaxPowerDark = max(V * CurrentDensityDarkApprox)
 #MaxPowerDark[Tcell_, \[Eta]_] := 
  #FindMaximum[(V* CurrentDensityDarkApprox[V, Tcell, \[Eta]]), {V, 1 volt, 0, 
     #Emax/e}, Method -> "PrincipalAxis"][[1]]
-VAtMPPDark = V / MaxPowerDark
+VAtMPPDark = max(V * CurrentDensityDarkApprox)
 #VAtMPPDark[Tcell_, \[Eta]_] := 
  #V /. FindMaximum[(V* CurrentDensityDarkApprox[V, Tcell, \[Eta]]), {V, 1 volt,
       #0, Emax/e}, Method -> "PrincipalAxis"][[2]]
 JAtMPPDark = CurrentDensityDarkApprox
 #JAtMPPDark[Tcell_, \[Eta]_] := 
  #CurrentDensityDarkApprox[VAtMPPDark[Tcell, \[Eta]], Tcell, \[Eta]]
-MaxEfficiencyDark = MaxPowerDark / SolarConstant
+MaxEfficiencyDark = MaxPowerDark / solar_constant
 #MaxEfficiencyDark[Tcell_, \[Eta]_] := 
  #MaxPowerDark[Tcell, \[Eta]]/SolarConstant
 
@@ -422,79 +433,3 @@ MaxEfficiencyDark = MaxPowerDark / SolarConstant
 #VAtMPPDark[298 kelvin, 1]/volt
 #JAtMPPDark[298 kelvin, 1]/(mA cm^-2)
 #MaxEfficiencyDark[298 kelvin, 1]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
